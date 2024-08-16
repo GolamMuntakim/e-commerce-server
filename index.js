@@ -3,7 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000
 const app = express()
 app.use(cors({
@@ -39,6 +39,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    const productCollection = client.db('e-commerce').collection('product')
    app.post ('/jwt', async(req,res)=>{
     const user = req.body
     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,{
@@ -58,6 +59,24 @@ async function run() {
         sameSite : process.env.NODE_ENV === 'production' ? 'none' : 'strict'
     }).send({success:true})
    })
+//    save the product data in database 
+app.post('/product', async(req,res)=>{
+    const data = req.body
+    const result = await productCollection.insertOne(data)
+    res.send(result)
+})
+// get the product
+app.get('/allproduct', async(req,res)=>{
+    const result = await productCollection.find().toArray()
+    res.send(result)
+})
+// delete product
+app.delete('/deleteproduct/:id',async(req,res)=>{
+    const id = req.params.id
+    const query ={ _id:new ObjectId(id)}
+    const result = await productCollection.deleteOne(query)
+    res.send(result)
+})
   } finally {
     
   }
