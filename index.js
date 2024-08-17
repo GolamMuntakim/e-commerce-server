@@ -66,10 +66,43 @@ app.post('/product', async(req,res)=>{
     res.send(result)
 })
 // get the product
-app.get('/allproduct', async(req,res)=>{
-    const result = await productCollection.find().toArray()
-    res.send(result)
+app.get('/allproduct', async (req, res) => {
+    const search = req.query.search || '';
+    const filter = req.query.filter
+    const brandfilter = req.query.brandfilter
+    const size = parseInt(req.query.size)
+    const page = parseInt(req.query.page) -1
+    const query = {
+        name: { $regex: search, $options: 'i' }
+    };
+    // console.log(search)
+    if(filter) query.category = filter
+    if(brandfilter) query.brand = brandfilter
+    const result = await productCollection.find(query).skip(page*size).limit(size).toArray();
+    res.send(result);
 })
+
+app.get('/product-count', async(req,res)=>{
+    const { search, filter,brandfilter } = req.query;
+        try {
+            let query = {};
+            if (search) {
+                query.name = { $regex: search, $options: 'i' };
+            }
+            if (filter) {
+                query.category = filter;
+            }
+            if (brandfilter) {
+                query.brand = brandfilter;
+            }
+            const count = await productCollection.countDocuments(query);
+            res.json({ count });
+        } catch (err) {
+            res.status(500).json({ error: 'Server error' });
+        }
+ })
+
+
 // delete product
 app.delete('/deleteproduct/:id',async(req,res)=>{
     const id = req.params.id
